@@ -40,7 +40,6 @@ period = st.selectbox("원하는 기간을 선택하세요:", ["일별 시세", 
 # 데이터 확인
 if not data.empty:
     if period == "일별 시세":
-        # 일별 도표 및 차트
         st.write("### 일별 시세 도표")
         daily_data = data[["Date", "Close"]].head(7)  # 최근 7일 데이터
         st.dataframe(daily_data)
@@ -59,10 +58,9 @@ if not data.empty:
         st.plotly_chart(fig)
 
     elif period == "월별 시세":
-        # 월별 도표 및 차트
         st.write("### 월별 시세 도표")
         data["Year-Month"] = data["Date"].dt.to_period("M")
-        monthly_data = data.groupby("Year-Month").mean(numeric_only=True).reset_index()
+        monthly_data = data.groupby("Year-Month")["Close"].mean().reset_index()
         monthly_data["Year-Month"] = monthly_data["Year-Month"].astype(str)
         st.dataframe(monthly_data.head(5))  # 최근 5개월 데이터
 
@@ -80,11 +78,10 @@ if not data.empty:
         st.plotly_chart(fig)
 
     elif period == "연별 시세":
-        # 연별 도표 및 차트
         st.write("### 연별 시세 도표")
         data["Year"] = data["Date"].dt.year
-        yearly_data = data.groupby("Year").mean(numeric_only=True).reset_index()
-        st.dataframe(yearly_data.head(5))  # 최근 5년 데이터
+        yearly_data = data.groupby("Year")["Close"].mean().reset_index()
+        st.dataframe(yearly_data)  # 연별 데이터 표시
 
         st.write("### 연별 시세 차트")
         fig = go.Figure()
