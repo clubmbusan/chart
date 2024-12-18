@@ -1,38 +1,25 @@
+import streamlit as st
 import plotly.graph_objects as go
 import pandas as pd
 
-# 예제 데이터: 날짜별 금 시세
-data = {
-    "날짜": pd.date_range(start="2024-12-01", end="2024-12-20", freq="D"),
-    "가격": [7850 + (i * 50) for i in range(20)]  # 단순 상승 시뮬레이션
-}
+# 제목 설정
+st.title("2024년 12월 금 시세 변화")
+st.write("이 페이지에서는 금 1kg의 시세 변화를 확인할 수 있습니다.")
 
-# 데이터프레임 생성
+# 데이터 준비
+data = {
+    "날짜": pd.date_range(start="2024-12-01", end="2024-12-20"),
+    "가격": [7850 + i * 50 for i in range(20)]
+}
 df = pd.DataFrame(data)
 
-# Plotly 그래프 객체 생성 (면적 차트로 변경)
+# Plotly 차트 생성
 fig = go.Figure()
+fig.add_trace(go.Scatter(x=df["날짜"], y=df["가격"], mode="lines+markers", name="금 시세"))
+fig.update_layout(title="1kg 금 시세 변화", xaxis_title="날짜", yaxis_title="가격 (USD)")
 
-fig.add_trace(go.Scatter(
-    x=df["날짜"],
-    y=df["가격"],
-    mode='lines',
-    fill='tozeroy',  # 아래 면적 채우기
-    line=dict(color='blue', width=2),
-    name="1kg 금 시세"
-))
+# 차트 출력
+st.plotly_chart(fig)
 
-# 레이아웃 설정: 인터랙티브 기능 추가
-fig.update_layout(
-    title="2024년 12월 1kg 금 가격 시세 변화",
-    xaxis=dict(
-        title="날짜",
-        rangeslider=dict(visible=True),  # 날짜 슬라이더 추가
-        type="date"  # X축을 날짜 형식으로 설정
-    ),
-    yaxis=dict(title="가격 (USD)"),
-    template="plotly_white"  # 차트 배경 테마 설정
-)
-
-# HTML 파일로 저장
-fig.write_html("index.html")
+# 추가 메시지
+st.write("위 차트는 2024년 12월 금 시세 변화를 보여줍니다.")
