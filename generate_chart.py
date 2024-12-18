@@ -5,95 +5,72 @@ import pandas as pd
 
 # Alpha Vantage API 키 입력
 ALPHA_VANTAGE_API_KEY = "44QLLQ0ELVP04SEY"
+SYMBOL = "GLD"  # 금 ETF 심볼 (Gold ETF)
 
-# 데이터 가져오기 함수
+# 데이터 불러오기 함수
 @st.cache_data
-def fetch_data():
-    url = f"https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=GLD&apikey={ALPHA_VANTAGE_API_KEY}"
+def load_data():
+    # Alpha Vantage API 요청
+    url = f"https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol={SYMBOL}&outputsize=full&apikey={API_KEY}"
     response = requests.get(url)
     data = response.json()
 
-    if "Time Series (Daily)" in data:
-        df = pd.DataFrame.from_dict(data["Time Series (Daily)"], orient="index")
-        df = df.rename(columns={
-            "1. open": "Open",
-            "2. high": "High",
-            "3. low": "Low",
-            "4. close": "Close",
-            "5. volume": "Volume"
-        })
-        df.index = pd.to_datetime(df.index)
-        df = df.reset_index().rename(columns={"index": "Date"})
-        df = df.sort_values("Date", ascending=True)
-        df["Close"] = pd.to_numeric(df["Close"], errors="coerce")
-        return df
-    else:
-        st.error("데이터를 불러오지 못했습니다. API 키를 확인해주세요.")
-        return pd.DataFrame()
+    # 데이터프레임 변환
+    df = pd.DataFrame(data['Time Series (Daily)']).T
+    df = df.rename(columns={'4. close': 'Close'})  # 종가 컬럼명 변경
+    df.index = pd.to_datetime(df.index)  # 날짜 인덱스 설정
+    df['Close'] = df['Close'].astype(float)
+    return df[['Close']]
 
-# 데이터 가져오기
-data = fetch_data()
+# 데이터 그룹화 함수
+def group_data(df, period):
+    if period == "daily":
+        return df.reset_index().rename(columns={'index': 'Date'})
+    elif period == "monthly":
+        df['Year-Month'] = df.index.to_period('M')
+        return df.groupby('Year-Month')['Close'].mean().reset_index()
+    elif period == "yearly":
+        df['Year'] = df.index.year
+        return df.groupby('Year')['Close'].mean().reset_index()
 
-# 제목과 옵션 선택
-st.title("실시간 금 시세 차트 및 도표")
-period = st.selectbox("원하는 기간을 선택하세요:", ["일별 시세", "월별 시세", "연별 시세"])
+# 데이터 로드
+df = load_data()
 
-# 데이터 확인
-if not data.empty:
-    if period == "일별 시세":
-        st.write("### 일별 시세 도표")
-        daily_data = data[["Date", "Close"]].tail(10)  # 최근 10일 데이터
-        st.dataframe(daily_data)
+# Streamlit 앱 제목 및 옵션
+st.title("📈 실시간 금 시세 차트 및 도표")
 
-        st.write("### 일별 시세 차트")
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            x=daily_data["Date"],
-            y=daily_data["Close"],
-            mode="lines+markers",
-            fill="tonexty",
-            line=dict(color="blue", width=2),
-            name="Daily Gold Price"
-        ))
-        fig.update_layout(title="일별 금 시세 차트", xaxis_title="날짜", yaxis_title="가격 (USD)")
-        st.plotly_chart(fig)
+# 기간 선택
+option = st.selectbox("원하는 기간을 선택하세요:", ["일별 시세", "월별 시세", "연별 시세"])
 
-    elif period == "월별 시세":
-        st.write("### 월별 시세 도표")
-        data["Year-Month"] = data["Date"].dt.to_period("M")  # 월별 그룹화
-        monthly_data = data.groupby("Year-Month")["Close"].mean().reset_index()
-        monthly_data["Year-Month"] = monthly_data["Year-Month"].astype(str)
-        st.dataframe(monthly_data.tail(6))  # 최근 6개월 데이터
+# 선택된 옵션에 따라 데이터 표시
+if option == "일별 시세":
+    grouped_data = group_data(df, "daily")
+    st.subheader("일별 시세 도표")
+    st.dataframe(grouped_data.tail(10))  # 최근 10일 데이터 표시
 
-        st.write("### 월별 시세 차트")
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            x=monthly_data["Year-Month"],
-            y=monthly_data["Close"],
-            mode="lines+markers",
-            fill="tonexty",
-            line=dict(color="green", width=2),
-            name="Monthly Gold Price"
-        ))
-        fig.update_layout(title="월별 금 시세 차트", xaxis_title="월", yaxis_title="평균 가격 (USD)")
-        st.plotly_chart(fig)
+    st.subheader("일별 금 시세 차트")
+    fig = px.line(grouped_data, x="Date", y="Close", title="일별 금 시세 변화", markers=True)
+    st.plotly_chart(fig)
 
-    elif period == "연별 시세":
-        st.write("### 연별 시세 도표")
-        data["Year"] = data["Date"].dt.year  # 연도별 그룹화
-        yearly_data = data.groupby("Year")["Close"].mean().reset_index()
-        st.dataframe(yearly_data.tail(5))  # 최근 5년 데이터
+elif option == "월별 시세":
+    grouped_data = group_data(df, "monthly")
+    st.subheader("월별 시세 도표")
+    st.dataframe(grouped_data.tail(12))  # 최근 12개월 데이터 표시
 
-        st.write("### 연별 시세 차트")
-        fig = go.Figure()
-        fig.add_trace(go.Bar(
-            x=yearly_data["Year"],
-            y=yearly_data["Close"],
-            name="Yearly Avg Gold Price"
-        ))
-        fig.update_layout(title="연별 금 시세 차트", xaxis_title="연도", yaxis_title="평균 가격 (USD)")
-        st.plotly_chart(fig)
+    st.subheader("월별 금 시세 차트")
+    fig = px.area(grouped_data, x="Year-Month", y="Close", title="월별 금 시세 변화", markers=True)
+    st.plotly_chart(fig)
 
-else:
-    st.error("데이터를 불러올 수 없습니다. 다시 시도해주세요.")
+elif option == "연별 시세":
+    grouped_data = group_data(df, "yearly")
+    st.subheader("연별 시세 도표")
+    st.dataframe(grouped_data)
+
+    st.subheader("연별 금 시세 차트")
+    fig = px.bar(grouped_data, x="Year", y="Close", title="연별 금 시세 변화", color="Close")
+    st.plotly_chart(fig)
+
+# API 출처 및 설명
+st.caption("데이터 출처: Alpha Vantage API | 15분 지연 데이터")
+
 
