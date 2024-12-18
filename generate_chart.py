@@ -4,7 +4,7 @@ import requests
 import pandas as pd
 
 # Alpha Vantage API 키 입력
-ALPHA_VANTAGE_API_KEY = "발급받은_키_여기에_입력"
+ALPHA_VANTAGE_API_KEY = "44QLLQ0ELVP04SEY"
 
 # 제목
 st.title("실시간 금 시세 차트 및 테이블")
