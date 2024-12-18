@@ -1,4 +1,3 @@
-
 import streamlit as st
 import plotly.graph_objects as go
 import pandas as pd
@@ -8,16 +7,16 @@ import yfinance as yf
 st.title("금 시세 변화 차트")
 st.write("아래 선택 메뉴를 사용하여 일별, 월별, 연별 금 시세를 확인하세요.")
 
-# 데이터 다운로드
+# 데이터 다운로드 - 2024년만 가져오기
 ticker = "GLD"  # SPDR Gold ETF
 st.write("데이터 다운로드 중...")
 try:
-    data = yf.download(ticker, period="5y", interval="1d")
-    st.write("데이터 미리보기:", data.head())  # 데이터 미리보기 출력
+    data = yf.download(ticker, start="2024-01-01", end="2024-12-31", interval="1d")
+    st.write("데이터 미리보기:", data.head())
 except Exception as e:
     st.error(f"데이터를 가져오는 중 오류 발생: {e}")
 
-# 데이터가 비어있는지 확인
+# 데이터 확인
 if data.empty:
     st.error("데이터가 비어 있습니다. yfinance에서 데이터를 가져오지 못했습니다.")
 else:
@@ -32,20 +31,20 @@ data["연"] = data["날짜"].dt.to_period("Y").dt.to_timestamp()
 # 사용자 입력
 option = st.selectbox(
     "원하는 기간을 선택하세요:",
-    ["일별 시세", "월별 시세", "연별 시세"]
+    ["2024년 일별 시세", "2024년 월별 시세", "연별 시세"]
 )
 
 # 옵션별 데이터 처리
-if option == "일별 시세":
+if option == "2024년 일별 시세":
     x_axis = data["날짜"]
     y_axis = data["Close"]
-    title = "일별 금 시세 변화"
+    title = "2024년 일별 금 시세 변화"
 
-elif option == "월별 시세":
+elif option == "2024년 월별 시세":
     monthly_data = data.groupby("월")["Close"].mean().reset_index()
     x_axis = monthly_data["월"]
     y_axis = monthly_data["Close"]
-    title = "월별 금 시세 변화"
+    title = "2024년 월별 금 시세 변화"
 
 elif option == "연별 시세":
     yearly_data = data.groupby("연")["Close"].mean().reset_index()
@@ -56,11 +55,10 @@ elif option == "연별 시세":
 # Plotly 차트 생성
 fig = go.Figure()
 fig.add_trace(go.Scatter(
-    x=x_axis,
-    y=y_axis,
+    x=x_axis, 
+    y=y_axis, 
     mode="lines+markers",
-    fill="tozeroy",
-    line=dict(color='blue', width=2),
+    line=dict(color="blue", width=2),
     name=title
 ))
 
