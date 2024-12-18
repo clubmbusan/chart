@@ -24,7 +24,8 @@ def fetch_data():
         })
         df.index = pd.to_datetime(df.index)
         df = df.reset_index().rename(columns={"index": "Date"})
-        df = df.sort_values("Date", ascending=False)
+        df = df.sort_values("Date", ascending=True)
+        df["Close"] = pd.to_numeric(df["Close"], errors="coerce")
         return df
     else:
         st.error("데이터를 불러오지 못했습니다. API 키를 확인해주세요.")
@@ -41,7 +42,7 @@ period = st.selectbox("원하는 기간을 선택하세요:", ["일별 시세", 
 if not data.empty:
     if period == "일별 시세":
         st.write("### 일별 시세 도표")
-        daily_data = data[["Date", "Close"]].head(7)  # 최근 7일 데이터
+        daily_data = data[["Date", "Close"]].tail(10)  # 최근 10일 데이터
         st.dataframe(daily_data)
 
         st.write("### 일별 시세 차트")
@@ -59,10 +60,10 @@ if not data.empty:
 
     elif period == "월별 시세":
         st.write("### 월별 시세 도표")
-        data["Year-Month"] = data["Date"].dt.to_period("M")
+        data["Year-Month"] = data["Date"].dt.to_period("M")  # 월별 그룹화
         monthly_data = data.groupby("Year-Month")["Close"].mean().reset_index()
         monthly_data["Year-Month"] = monthly_data["Year-Month"].astype(str)
-        st.dataframe(monthly_data.head(5))  # 최근 5개월 데이터
+        st.dataframe(monthly_data.tail(6))  # 최근 6개월 데이터
 
         st.write("### 월별 시세 차트")
         fig = go.Figure()
@@ -79,9 +80,9 @@ if not data.empty:
 
     elif period == "연별 시세":
         st.write("### 연별 시세 도표")
-        data["Year"] = data["Date"].dt.year
+        data["Year"] = data["Date"].dt.year  # 연도별 그룹화
         yearly_data = data.groupby("Year")["Close"].mean().reset_index()
-        st.dataframe(yearly_data)  # 연별 데이터 표시
+        st.dataframe(yearly_data.tail(5))  # 최근 5년 데이터
 
         st.write("### 연별 시세 차트")
         fig = go.Figure()
@@ -92,5 +93,7 @@ if not data.empty:
         ))
         fig.update_layout(title="연별 금 시세 차트", xaxis_title="연도", yaxis_title="평균 가격 (USD)")
         st.plotly_chart(fig)
+
 else:
     st.error("데이터를 불러올 수 없습니다. 다시 시도해주세요.")
+
