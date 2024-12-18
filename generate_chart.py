@@ -7,10 +7,11 @@ import yfinance as yf
 st.title("금 시세 변화 차트")
 st.write("아래 선택 메뉴를 사용하여 일별, 월별, 연별 금 시세를 확인할 수 있습니다.")
 
-# 사용자 입력을 받는 Selectbox
+# 사용자 입력을 받는 Selectbox (기본값: 월별 시세)
 option = st.selectbox(
     "원하는 기간을 선택하세요:",
-    ["일별 시세", "월별 시세", "연별 시세"]
+    ["일별 시세", "월별 시세", "연별 시세"],
+    index=1  # 기본값으로 '월별 시세' 선택
 )
 
 # 실시간 데이터 가져오기 (GLD: SPDR Gold ETF 사용)
